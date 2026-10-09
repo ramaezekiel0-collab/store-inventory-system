@@ -1,0 +1,138 @@
+const html = `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Store Inventory</title>
+    <style>
+      body { font-family: Arial, sans-serif; background: #f5f7fb; margin: 0; padding: 2rem; }
+      .container { max-width: 1100px; margin: 0 auto; }
+      .panel { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
+      h1, h2 { margin-top: 0; }
+      .version { display: inline-block; padding: 0.4rem 0.8rem; background: #0f172a; color: white; border-radius: 999px; }
+      form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; }
+      input, button { padding: 0.8rem; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; }
+      button { background: #2563eb; color: white; cursor: pointer; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #e2e8f0; text-align: left; padding: 0.8rem; }
+      .status { display: inline-block; background: #dcfce7; color: #166534; padding: 0.2rem 0.5rem; border-radius: 999px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="panel">
+        <h1>Store Inventory</h1>
+        <p class="version">Build: __APP_VERSION__</p>
+      </div>
+
+      <div class="panel">
+        <h2>Add Inventory Item</h2>
+        <form id="item-form">
+          <input id="name" placeholder="Item name" required />
+          <input id="sku" placeholder="SKU" required />
+          <input id="quantity" type="number" min="0" placeholder="Quantity" required />
+          <input id="price" type="number" min="0" step="0.01" placeholder="Price" required />
+          <button type="submit">Add item</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2>Current Inventory</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>SKU</th>
+              <th>Qty</th>
+              <th>Price</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-body"></tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h2>Recent Orders</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="order-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      const inventoryBody = document.getElementById('inventory-body');
+      const orderBody = document.getElementById('order-body');
+
+      async function fetchJson(url, options = {}) {
+        const response = await fetch(url, {
+          headers: { 'Content-Type': 'application/json' },
+          ...options,
+        });
+        return response.json();
+      }
+
+      async function loadInventory() {
+        const items = await fetchJson('/api/items');
+        inventoryBody.innerHTML = items.map(item => `
+          <tr>
+            <td>${item.id}</td>
+            <td>${item.name}</td>
+            <td>${item.sku}</td>
+            <td>${item.quantity}</td>
+            <td>$${Number(item.price).toFixed(2)}</td>
+          </tr>
+        `).join('');
+      }
+
+      async function loadOrders() {
+        const orders = await fetchJson('/api/orders');
+        orderBody.innerHTML = orders.map(order => `
+          <tr>
+            <td>${order.id}</td>
+            <td>${order.customer_name}</td>
+            <td>$${Number(order.total).toFixed(2)}</td>
+            <td><span class="status">${order.status}</span></td>
+          </tr>
+        `).join('');
+      }
+
+      document.getElementById('item-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const payload = {
+          name: document.getElementById('name').value,
+          sku: document.getElementById('sku').value,
+          quantity: Number(document.getElementById('quantity').value),
+          price: Number(document.getElementById('price').value),
+        };
+
+        await fetchJson('/api/items', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+
+        event.target.reset();
+        await loadInventory();
+      });
+
+      loadInventory();
+      loadOrders();
+      setInterval(async () => {
+        await loadInventory();
+        await loadOrders();
+      }, 15000);
+    </script>
+  </body>
+</html>
+`;
+
+module.exports = html;
