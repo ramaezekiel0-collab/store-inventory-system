@@ -3,15 +3,18 @@ const assert = require('node:assert/strict');
 const request = require('supertest');
 const { app, initDatabase, pool } = require('../server');
 
-test('health endpoint works', async () => {
+test.beforeEach(async () => {
+  await pool.query('TRUNCATE TABLE items RESTART IDENTITY CASCADE');
   await initDatabase();
+});
+
+test('health endpoint works', async () => {
   const response = await request(app).get('/health');
   assert.equal(response.status, 200);
   assert.equal(response.body.service, 'inventory-api');
 });
 
 test('items endpoint returns seeded data', async () => {
-  await initDatabase();
   const response = await request(app).get('/api/items');
   assert.equal(response.status, 200);
   assert.ok(Array.isArray(response.body));
@@ -19,7 +22,6 @@ test('items endpoint returns seeded data', async () => {
 });
 
 test('create item endpoint adds new item', async () => {
-  await initDatabase();
   const response = await request(app)
     .post('/api/items')
     .send({ name: 'Notebook', sku: 'NOTE-NEW-222', quantity: 12, price: 3.25 });
