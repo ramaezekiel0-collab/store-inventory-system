@@ -3,6 +3,14 @@ pipeline {
 
   environment {
     APP_VERSION = "${env.BUILD_NUMBER}"
+    POSTGRES_DB = 'store_inventory'
+    POSTGRES_USER = 'storeuser'
+    POSTGRES_PASSWORD = 'storepass'
+    POSTGRES_PORT = '5432'
+    DB_HOST = 'postgres'
+    DB_NAME = 'store_inventory'
+    DB_USER = 'storeuser'
+    DB_PASSWORD = 'storepass'
   }
 
   triggers {
@@ -18,10 +26,17 @@ pipeline {
 
     stage('Test') {
       steps {
-        sh 'docker compose up -d postgres'
-        sh 'docker compose build inventory-api orders-api frontend'
-        sh 'docker compose run --rm inventory-api npm test'
-        sh 'docker compose run --rm orders-api npm test'
+        script {
+          try {
+            sh 'docker compose up -d postgres'
+            sh 'docker compose build inventory-api orders-api frontend'
+            sh 'docker compose run --rm inventory-api npm test'
+            sh 'docker compose run --rm orders-api npm test'
+          } catch (Exception e) {
+            echo "Tests failed: ${e.message}"
+            throw e
+          }
+        }
       }
     }
 
@@ -39,9 +54,17 @@ pipeline {
 
     stage('Smoke Test') {
       steps {
-        sh 'curl -fsS http://localhost/health'
-        sh 'curl -fsS http://localhost/api/items'
-        sh 'curl -fsS http://localhost/api/orders'
+        script {
+          try {
+            sh 'curl -fsS http://localhost/health'
+            sh 'curl -fsS http://localhost/api/items'
+            sh 'curl -fsS http://localhost/api/orders'
+            echo "All endpoints are healthy!"
+          } catch (Exception e) {
+            echo "Smoke test failed: ${e.message}"
+            throw e
+          }
+        }
       }
     }
   }
@@ -52,7 +75,7 @@ pipeline {
       echo "Application version deployed: ${APP_VERSION}"
     }
     success {
-      echo 'Deployment succeeded.'
+      echo 'Deployment succeeded. App is live.'
     }
     failure {
       echo 'Deployment failed. No new version was deployed to production.'
