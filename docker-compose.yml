@@ -1,11 +1,7 @@
-version: '3.9'
-
 services:
   postgres:
     image: postgres:16-alpine
     container_name: store-postgres
-    env_file:
-      - .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -27,8 +23,6 @@ services:
     build:
       context: ./inventory-api
       dockerfile: Dockerfile
-    env_file:
-      - .env
     environment:
       DB_HOST: postgres
       DB_PORT: ${POSTGRES_PORT}
@@ -53,8 +47,6 @@ services:
     build:
       context: ./orders-api
       dockerfile: Dockerfile
-    env_file:
-      - .env
     environment:
       DB_HOST: postgres
       DB_PORT: ${POSTGRES_PORT}
@@ -79,8 +71,6 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    env_file:
-      - .env
     environment:
       APP_VERSION: ${APP_VERSION}
       PORT: 3000
