@@ -56,9 +56,9 @@ pipeline {
       steps {
         script {
           try {
-            sh 'curl -fsS http://localhost/health'
-            sh 'curl -fsS http://localhost/api/items'
-            sh 'curl -fsS http://localhost/api/orders'
+            sh 'docker compose exec -T proxy curl -fsS http://localhost/health'
+            sh 'docker compose exec -T proxy curl -fsS http://localhost/api/items'
+            sh 'docker compose exec -T proxy curl -fsS http://localhost/api/orders'
             echo "All endpoints are healthy!"
           } catch (Exception e) {
             echo "Smoke test failed: ${e.message}"
