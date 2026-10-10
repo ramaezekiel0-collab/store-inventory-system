@@ -1,166 +1,271 @@
 # Store Inventory System
 
-A small inventory management application built as a multi-container stack. The project demonstrates Docker, Docker Compose, Nginx reverse proxy, PostgreSQL persistence, and a Jenkins pipeline that automatically builds, tests, deploys, and verifies the system.
+A containerized multi-service inventory and order management system built with Docker, NGINX, PostgreSQL, and Jenkins. The project demonstrates full CI/CD automation: code is tested, Docker images are built, deployed, and verified by smoke tests before release.
 
-## Team members and roles
-- Project Lead / Scrum Master: [Student Name]
-- DevOps / CI-CD Engineer: [Student Name]
-- Infrastructure Engineer: [Student Name]
-- Backend and Database Engineer: [Student Name]
-- Frontend, QA & Documentation Lead: [Student Name]
+## Project Overview
 
-## Project overview
-This system includes a simple frontend for managing inventory items and placing basic customer orders. It is split into three application modules:
+This project simulates a small e-commerce / retail management system with three main modules:
 
-1. Frontend UI
-   - Displays current stock
-   - Allows adding inventory items
-   - Shows the current build/version label
+- Frontend: web UI served through a reverse proxy
+- Inventory API: manages product inventory and stock data
+- Orders API: manages customer orders and statuses
+- Database: PostgreSQL for persistent storage
+- Jenkins: runs the CI/CD pipeline to test, build, deploy, and verify the application
 
-2. Inventory API
-   - Reads and writes inventory data in PostgreSQL
-   - Endpoints: `GET /health`, `GET /api/items`, `GET /api/items/:id`, `POST /api/items`, `PUT /api/items/:id`
+## Team Members and Roles
 
-3. Orders API
-   - Records orders and statuses
-   - Endpoints: `GET /health`, `GET /api/orders`, `POST /api/orders`, `PUT /api/orders/:id/status`
-
-A PostgreSQL database stores the persistent data in a named Docker volume, and a reverse proxy directs traffic to the correct service.
+- Rama, Ezekiel P. — Project Lead / DevOps Engineer
+- Ong, Jhieffer Drake S. — Backend Engineer
+- Carbungco, Sherwin L. — Infrastructure Engineer
+- Malong, Gian Jose B. — Frontend / QA Lead
+- Paras, Rafael John S. — Documentation / Presentation Lead
 
 ## Architecture
 
-- `Nginx` listens on port 80 and routes:
-  - `/` → frontend
-  - `/api/items/*` → inventory-api
-  - `/api/orders/*` → orders-api
-- `PostgreSQL` stores the inventory and order tables in `db-data`
-- `Jenkins` runs in a separate Docker Compose stack and triggers on SCM changes
+```text
+Browser
+  |
+  v
+http://localhost/
+  |
+  v
+NGINX Proxy (port 80)
+  |------------------------------|
+  |                              |
+  v                              v
+Frontend                     Inventory API
+(port 3000)                  (port 5000)
+  |                              |
+  |                              v
+  |                         PostgreSQL
+  |                         (persistent volume)
+  |
+  v
+Orders API
+(port 5001)
+```
 
-## Prerequisites
-- Docker Desktop or Docker Engine
+## System Components
+
+### 1. Frontend
+- Provides the user-facing inventory and order interface
+- Queries backend APIs through the reverse proxy
+- Displays a visible build/version label for deployment verification
+
+### 2. Inventory API
+- Handles product inventory data
+- Endpoints include:
+  - GET /health
+  - GET /api/items
+  - POST /api/items
+
+### 3. Orders API
+- Handles customer orders and order status
+- Endpoints include:
+  - GET /health
+  - GET /api/orders
+  - POST /api/orders
+
+### 4. PostgreSQL Database
+- Stores application data in a named Docker volume
+- Persists after container restarts or redeployments
+
+### 5. Jenkins CI/CD Pipeline
+- Runs inside a Docker container
+- Pulls code from GitHub
+- Runs tests
+- Builds Docker images
+- Deploys the stack
+- Executes smoke tests for health and API endpoints
+
+## Required Tools
+
+- Docker Desktop / Docker Engine
 - Docker Compose
 - Git
-- Browser for verification
+- Jenkins running in Docker
 
-## Quick start
-1. Clone the repository:
-   ```bash
-   git clone <repo-url>
-   cd store-inventory-system
-   ```
+## Prerequisites
 
-2. Copy the sample environment file and update values if needed:
-   ```bash
-   cp .env.example .env
-   ```
+Before starting the project, ensure the following are installed:
 
-3. Start the application stack:
-   ```bash
-   docker compose up -d --build
-   ```
-
-4. Open the app in the browser:
-   ```text
-   http://localhost
-   ```
-
-5. Check health endpoints:
-   ```bash
-   curl http://localhost/health
-   curl http://localhost/api/items
-   curl http://localhost/api/orders
-   ```
-
-## Stop the stack
 ```bash
-docker compose down
+docker --version
+docker compose version
+git --version
 ```
 
-To remove the persistent database volume:
+## Local Setup
+
+Clone the repository:
+
 ```bash
-docker compose down -v
+git clone https://github.com/ramaezekiel0-collab/store-inventory-system.git
+cd store-inventory-system
 ```
 
-## Jenkins setup
-Start Jenkins from its own compose file:
+Create your environment file:
+
+```bash
+cp .env.example .env
+```
+
+Start the full stack:
+
+```bash
+docker compose up -d --build
+```
+
+Check the containers:
+
+```bash
+docker compose ps
+```
+
+Verify services:
+
+- Frontend: http://localhost/
+- Inventory API: http://localhost/api/items
+- Orders API: http://localhost/api/orders
+- Health check: http://localhost/health
+
+## Jenkins Setup
+
+Jenkins is hosted separately from the application stack to keep the deployment environment isolated.
+
+Start Jenkins:
+
 ```bash
 cd infra/jenkins
 docker compose up -d --build
 ```
 
-Open:
+Open Jenkins in the browser:
+
 ```text
 http://localhost:8081
 ```
 
-Then:
-1. Unlock Jenkins with the password from:
-   ```bash
-   docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
-   ```
-2. Install suggested plugins and Docker Pipeline
-3. Create an admin user
-4. Add credentials if needed for Git or environment secrets
+### Jenkins Requirements
+- Install suggested plugins
+- Add Docker Pipeline plugin
+- Create admin user
+- Verify Docker access using:
 
-## Jenkins pipeline
-The repository includes a declarative `Jenkinsfile` with this flow:
-- Checkout
-- Test
-- Build Images
-- Deploy
-- Smoke Test
-
-The pipeline is set to check for changes with Poll SCM and can be upgraded to a GitHub webhook trigger for instant updates.
-
-## Production-ready notes
-This is a classroom/lab setup. For a real production deployment you would avoid mounting the host Docker socket directly and would use more isolated build agents or a dedicated CI/CD environment.
-
-## Useful commands
 ```bash
-docker compose ps
-docker compose logs -f
-
-docker exec -it store-postgres psql -U storeuser -d store_inventory
+docker exec jenkins docker ps
 ```
 
-## File structure
+### Jenkins Pipeline Trigger
+
+For the classroom setup, the pipeline is configured to use Poll SCM or GitHub webhook-based trigger, depending on the environment.
+
+A typical Poll SCM schedule is:
+
 ```text
-store-inventory-system/
-├── .env.example
-├── .gitignore
-├── Jenkinsfile
-├── docker-compose.yml
-├── README.md
-├── frontend/
-│   ├── Dockerfile
-│   ├── .dockerignore
-│   ├── package.json
-│   ├── server.js
-│   └── public/
-│       ├── index.html
-│       └── app.js
-├── inventory-api/
-│   ├── Dockerfile
-│   ├── .dockerignore
-│   ├── package.json
-│   ├── server.js
-│   └── tests/
-│       └── server.test.js
-├── orders-api/
-│   ├── Dockerfile
-│   ├── .dockerignore
-│   ├── package.json
-│   ├── server.js
-│   └── tests/
-│       └── server.test.js
-├── proxy/
-│   ├── Dockerfile
-│   └── nginx.conf
-├── db/
-│   └── init.sql
-├── infra/
-│   └── jenkins/
-│       ├── Dockerfile
-│       └── docker-compose.yml
-└── docs/
+H/2 * * * *
 ```
+
+This checks the repository every 2 minutes.
+
+## Jenkins Pipeline Stages
+
+The Jenkinsfile is stored at the repository root and contains the following stages:
+
+1. Checkout
+2. Test
+3. Build Images
+4. Deploy
+5. Smoke Test
+
+### Pipeline Behavior
+- If tests fail, the pipeline stops before deployment
+- Broken changes do not reach the running application
+- Images are tagged with the build number for traceability
+- The deployment step uses the current version and shows whether the app is live
+
+## Smoke Tests
+
+The smoke test verifies:
+
+- /health returns HTTP 200
+- /api/items returns valid JSON data
+- /api/orders returns valid JSON data
+
+## Quality Gates and Deployment Safety
+
+The project follows quality-gate rules:
+
+- failing tests prevent deployment
+- previous version stays live while a broken build is rejected
+- PostgreSQL data remains after deployments because it is stored in a named volume
+- older image tags can be redeployed for rollback
+
+## Persistence and Rollback
+
+### Database Persistence
+The database stores data in a named Docker volume:
+
+```text
+store-inventory-system_db-data
+```
+
+This keeps records even after:
+
+```bash
+docker compose down
+docker compose up -d
+```
+
+### Rollback Example
+
+To redeploy a previous image tag:
+
+```bash
+TAG=12 docker compose up -d --no-build
+```
+
+## Troubleshooting
+
+### Jenkins cannot access Docker
+Check:
+
+```bash
+docker exec jenkins docker ps
+```
+
+If it fails, ensure the Docker socket is mounted correctly and the Jenkins container is running with permissions to access it.
+
+### NGINX returns 502 or 404
+Verify the proxy configuration is routing `/api/items` and `/api/orders` correctly to the backend services.
+
+### Duplicate key errors during tests
+This was resolved by ensuring each test begins with a clean database state using `TRUNCATE TABLE` before each test run.
+
+## Project Status
+
+This project is complete and the full pipeline is working end-to-end:
+
+- build succeeds
+- tests pass
+- images build
+- deploy occurs
+- smoke tests pass
+- app is live on localhost
+
+## Important Notes
+
+- Real secrets must not be committed to Git
+- Use `.env` locally and store production secrets in Jenkins Credentials
+- Production-grade security would use dedicated build agents and controlled Docker permissions instead of mounting the host Docker socket directly
+
+## References
+
+- Docker Documentation
+- Jenkins Documentation
+- PostgreSQL Documentation
+- NGINX Documentation
+
+## License
+
+This project is created for academic purposes under the course requirements for BSIT/ITE 303.

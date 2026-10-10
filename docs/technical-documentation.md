@@ -1,0 +1,7 @@
+POSTGRES_DB=store_inventory
+POSTGRES_USER=storeuser
+POSTGRES_PASSWORD=change_me_in_production
+DB_HOST=postgres
+DB_NAME=store_inventory
+DB_USER=storeuser
+DB_PASSWORD=change_me_in_production
