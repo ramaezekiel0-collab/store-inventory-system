@@ -20,6 +20,7 @@ services:
     restart: unless-stopped
 
   inventory-api:
+    image: store-inventory-system-collab/inventory-api:${APP_VERSION:-latest}
     build:
       context: ./inventory-api
       dockerfile: Dockerfile
@@ -44,6 +45,7 @@ services:
     restart: unless-stopped
 
   orders-api:
+    image: store-inventory-system-collab/orders-api:${APP_VERSION:-latest}
     build:
       context: ./orders-api
       dockerfile: Dockerfile
@@ -68,6 +70,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    image: store-inventory-system-collab/frontend:${APP_VERSION:-latest}
     build:
       context: ./frontend
       dockerfile: Dockerfile
@@ -90,6 +93,7 @@ services:
     restart: unless-stopped
 
   proxy:
+    image: store-inventory-system-collab/proxy:${APP_VERSION:-latest}
     build:
       context: ./proxy
       dockerfile: Dockerfile
