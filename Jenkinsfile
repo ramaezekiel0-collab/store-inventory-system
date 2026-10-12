@@ -28,7 +28,6 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'exit 1'
                 // Build the test images, but do not start or recreate PostgreSQL.
                 sh 'docker compose build inventory-api orders-api frontend'
                 sh 'docker compose run --rm --no-deps inventory-api npm test'
