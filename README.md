@@ -1,4 +1,4 @@
-# Store Inventory System
+﻿# Store Inventory System
 
 A containerized multi-service inventory and order management system built with Docker, NGINX, PostgreSQL, and Jenkins. The project demonstrates full CI/CD automation: code is tested, Docker images are built, deployed, and verified by smoke tests before release.
 
@@ -14,11 +14,11 @@ This project simulates a small e-commerce / retail management system with three 
 
 ## Team Members and Roles
 
-- Rama, Ezekiel P. — Project Lead / DevOps Engineer
-- Ong, Jhieffer Drake S. — Backend Engineer
-- Carbungco, Sherwin L. — Infrastructure Engineer
-- Malong, Gian Jose B. — Frontend / QA Lead
-- Paras, Rafael John S. — Documentation / Presentation Lead
+- Rama, Ezekiel P. â€” Project Lead / DevOps Engineer
+- Ong, Jhieffer Drake S. â€” Backend Engineer
+- Carbungco, Sherwin L. â€” Infrastructure Engineer
+- Malong, Gian Jose B. â€” Frontend / QA Lead
+- Paras, Rafael John S. â€” Documentation / Presentation Lead
 
 ## Architecture
 
@@ -204,26 +204,69 @@ The project follows quality-gate rules:
 ## Persistence and Rollback
 
 ### Database Persistence
-The database stores data in a named Docker volume:
 
-```text
-store-inventory-system_db-data
+PostgreSQL stores its data in a named Docker volume mounted at
+`/var/lib/postgresql/data`. In this Compose project, the expected volume name is
+`store-inventory-system-collab_db-data`.
+
+List the volumes:
+
+```powershell
+docker volume ls
 ```
 
-This keeps records even after:
+Check the database container and volume configuration:
 
-```bash
-docker compose down
-docker compose up -d
+```powershell
+docker inspect store-postgres --format '{{json .Mounts}}'
 ```
 
-### Rollback Example
+Database records should remain after restarting or recreating the PostgreSQL
+container as long as the named volume is retained. Never use `docker compose down -v`
+when you need to preserve project data.
 
-To redeploy a previous image tag:
+### Rollback Demonstration (PowerShell)
 
-```bash
-TAG=12 docker compose up -d --no-build
+The current working release is version 24. Local images for the frontend and both
+APIs are available for version 23, but a version 23 proxy image is not currently
+available. Therefore, the example below rolls back only the frontend and API
+services and leaves the existing proxy and database running.
+
+First, confirm that the required images exist:
+
+```powershell
+docker image inspect store-inventory-system-collab/frontend:23
+docker image inspect store-inventory-system-collab/inventory-api:23
+docker image inspect store-inventory-system-collab/orders-api:23
 ```
+
+Roll back those three services:
+
+```powershell
+$env:APP_VERSION = "23"
+docker compose up -d --no-deps --no-build inventory-api orders-api frontend
+```
+
+Verify the deployment:
+
+```powershell
+docker compose ps
+Invoke-WebRequest -UseBasicParsing http://localhost/health
+Invoke-RestMethod http://localhost/api/items
+Invoke-RestMethod http://localhost/api/orders
+```
+
+Restore version 24 afterward:
+
+```powershell
+$env:APP_VERSION = "24"
+docker compose up -d --no-deps --no-build inventory-api orders-api frontend proxy
+```
+
+Verify the endpoints again before concluding the demonstration. The rollback
+example assumes version 23 is compatible with the current database schema.
+Do not claim a successful rollback until the commands and verification have
+actually passed. Jenkins deployments use the Jenkins build number for image tags.
 
 ## Troubleshooting
 
@@ -269,3 +312,4 @@ This project is complete and the full pipeline is working end-to-end:
 ## License
 
 This project is created for academic purposes under the course requirements for BSIT/ITE 303.
+
